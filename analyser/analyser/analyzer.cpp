@@ -79,6 +79,7 @@ void analyzer::changeState()
 			//以0开头可能是16进制也可能是10进制。
 			case '0':
 			{
+				token += ch;
 				state = 8; break;
 			}
 			//数字开头
@@ -142,20 +143,24 @@ void analyzer::changeState()
 				this->token += ch;
 				state = 3;
 			}
+			else if ('e' == ch || 'E' == ch)
+			{
+				this->token += ch;
+				state = 5;
+			}
 			else if(isLetter(ch) || isUnderline(ch))
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
 				//加入
-				//打印
+				printResult("dec");
 			}
 			else
 			{
 				state = 0;
 				fallBackPoint();
 				//加入
-				//打印
 				printResult("dec");
 			}
 			break;
@@ -177,9 +182,10 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
 				//加入
 				//打印
+				printResult("dec");
 			}
 			else
 			{
@@ -187,7 +193,9 @@ void analyzer::changeState()
 				fallBackPoint();
 				//加入
 				//打印
+				printResult("dec");
 			}
+			break;
 		}
 		case 4:
 		{
@@ -206,17 +214,18 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
 				//加入
-				//打印
+				printResult("dec");
 			}
 			else
 			{
 				state = 0;
 				fallBackPoint();
 				//加入
-				//打印
+				printResult("dec");
 			}
+			break;
 		}
 		case 5:
 		{
@@ -235,14 +244,15 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
 			}
 			else
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("2");
 			}
+			break;
 		}
 		case 6:
 		{
@@ -256,14 +266,15 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
 			}
 			else
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("2");
 			}
+			break;
 		}
 		case 7:
 		{
@@ -277,17 +288,18 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
 				//加入
-				//打印
+				printResult("dec");
 			}
 			else
 			{
 				state = 0;
 				fallBackPoint();
 				//加入
-				//打印
+				printResult("dec");
 			}
+			break;
 		}
 		case 8:
 		{
@@ -311,14 +323,16 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("2");
 			}
 			else if (isLetter(ch) || isUnderline(ch))
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
+				printResult("oct");
 			}
+			break;
 		}
 		case 9:
 		{
@@ -342,14 +356,23 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("2");
 			}
 			else if (isLetter(ch) || isUnderline(ch))
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
+				printResult("oct");
+				
 			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult("oct");
+			}
+			break;
 		}
 		case 10:
 		{
@@ -363,8 +386,9 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("2");
 			}
+			break;
 		}
 		case 11:
 		{
@@ -378,8 +402,16 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
+				printResult("hex");
 			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult("hex");
+			}
+			break;
 		}
 		case 12:
 		{
@@ -393,12 +425,16 @@ void analyzer::changeState()
 			{
 				state = 0;
 				fallBackPoint();
-				dealError();
+				dealError("0");
+				printResult();
 			}
 			else
 			{
-
+				state = 0;
+				fallBackPoint();
+				printResult();
 			}
+			break;
 		}
 		case 13:
 		{
@@ -413,10 +449,21 @@ void analyzer::changeState()
 				token += ch;
 				state = 5;
 			}
+			else if(isLetter(ch) || isUnderline(ch))
+			{
+				state = 0;
+				fallBackPoint();
+				dealError("0");
+				printResult("dec");
+			}
 			else
 			{
+				state = 0;
+				fallBackPoint();
+				printResult("dec");
 
 			}
+			break;
 		}
 		case 14:
 		{
@@ -520,4 +567,9 @@ void analyzer::printResult(string info)
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "id",token.c_str());
 	else if(info=="dec")
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "dec", token.c_str());
+	else if(info=="oct")
+		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "oct", token.c_str());
+	else if(info=="hex")
+		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "hex", token.c_str());
+
 }
