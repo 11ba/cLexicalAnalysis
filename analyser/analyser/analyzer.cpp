@@ -90,6 +90,7 @@ void analyzer::changeState()
 			//小数点开头
 			case '.':
 			{
+				token += ch;
 				state = 12;
 				break;
 			}
@@ -97,6 +98,68 @@ void analyzer::changeState()
 			{
 				state = 14;
 				break;
+			}
+			//注释处理 以及除法处理
+			case '/':
+			{
+				token += ch;
+				state = 15;
+			}
+			//处理 预处理
+			case '#':
+			{
+
+			}
+			//一 只有两种形态的 比如 * *=
+			case '*': case '%': case '=': case '!': case '~':
+			case '^': 
+			{
+
+			}
+			//二  + ++ +=
+			case '+':
+			{
+
+			}
+			//三 有四种形态 类似于 - -> -- -=
+			case '-' :
+			{
+
+			}
+			// & && &=
+			case '&':
+			{
+
+			}
+			// | || |=
+			case '|' :
+			{
+				
+			}
+			// > >> >= >>=
+			case '>' :
+			{
+
+			}
+			// < << <= <<=
+			case '<':
+			{
+
+			}
+			//界符
+			case '(': case ')': case '[':case ']':case '{':case '}':
+			{
+
+			}
+			//一个字符
+			case '\'':
+			{
+
+			}
+			//字符串常量
+			case '\"':
+			{
+
 			}
 			default:
 				break;
@@ -469,6 +532,101 @@ void analyzer::changeState()
 		{
 			this->pLineNum++;//预测行数加1
 			state = 0;
+			break;
+		}
+		case 15:
+		{
+			ch = this->getChar();
+			if (ch == '*')
+			{
+				state = 16;
+			}
+			else if ('=' == ch)
+			{
+				token += ch;
+				state = 18;
+			}
+			else if ('/' == ch)
+			{
+				state = 19;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				numOfWords[token]++;
+				printResult();
+			}
+			break;
+		}
+		case 16:
+		{
+			ch = this->getChar();
+			if ('*' == ch)
+			{
+				state = 17;
+			}
+			else if ('\n' == ch)
+			{
+				++this->pLineNum;
+			}
+			else if (-1 != ch)
+			{
+				state = 16;
+			}
+			else if (-1 == ch)
+			{
+				state = 0;
+				fallBackPoint();
+				dealError("3");
+			}
+			break;
+		}
+		case 17:
+		{
+			ch = this->getChar();
+			if ('/' == ch)
+			{
+				state = 0;
+			}
+			else if ('*' == ch)
+			{
+				state = 17;
+			}
+			else if (-1 != ch)
+			{
+				state = 16;
+			}
+			else if (-1 == ch)
+			{
+				state = 0;
+				fallBackPoint();
+				dealError("3");
+			}
+			break;
+		}
+		case 18:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 19:
+		{
+			ch = this->getChar();
+			if (-1 == ch)
+			{
+				state = 0;
+			}
+			else if ('\n'==ch)
+			{
+				++this->pLineNum;
+				state = 0;
+			}
+			else
+			{
+				state = 19;
+			}
 			break;
 		}
 		default:
