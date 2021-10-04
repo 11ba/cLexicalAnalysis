@@ -8,8 +8,8 @@ analyzer::analyzer()
 {
 	iniKeyWords();//初始化关键词表
 	resultFile = fopen("result.txt", "w");//初始化
-	this->cProgram = fopen("c.txt", "r");
-	this->state = 0;
+	this->cProgram = fopen("c.txt", "r");//打开c语言程序
+	this->state = 0;//当前状态为0
 	this->willEnd = 0;
 	this->wordNum = 0;
 	this->lineNum = 0;
@@ -104,64 +104,87 @@ void analyzer::changeState()
 			{
 				token += ch;
 				state = 15;
+				break;
 			}
-			//处理 预处理
+			//处理 预处理 直接忽略 因为这是 预编译器做的事情
 			case '#':
 			{
-
+				state = 20;
+				break;
+			}
+			//字符
+			case '\'':
+			{
+				state = 21;
+				break;
+			}
+			//字符串常量
+			case '\"':
+			{
+				state = 25;
+				break;
 			}
 			//一 只有两种形态的 比如 * *=
 			case '*': case '%': case '=': case '!': case '~':
 			case '^': 
 			{
-
+				state = 30;
+				token += ch;
+				break;
 			}
 			//二  + ++ +=
 			case '+':
 			{
-
+				state = 32;
+				token += ch;
+				break;
 			}
 			//三 有四种形态 类似于 - -> -- -=
 			case '-' :
 			{
-
+				state = 34;
+				token += ch;
+				break;
 			}
 			// & && &=
 			case '&':
 			{
-
+				state = 36;
+				token += ch;
+				break;
 			}
 			// | || |=
 			case '|' :
 			{
-				
+				state = 38;
+				token += ch;
+				break;
 			}
 			// > >> >= >>=
 			case '>' :
 			{
-
+				state = 40;
+				token += ch;
+				break;
 			}
 			// < << <= <<=
 			case '<':
 			{
-
+				state = 43;
+				token += ch;
+				break;
 			}
 			//界符
 			case '(': case ')': case '[':case ']':case '{':case '}':
+			case ':': case ';': 
 			{
-
-			}
-			//一个字符
-			case '\'':
-			{
-
-			}
-			//字符串常量
-			case '\"':
-			{
-
+				state = 46;
+				token += ch;
+				break;
 			}
 			default:
+				state = 0;
+				dealError("1");
 				break;
 			}
 			break;
@@ -629,6 +652,418 @@ void analyzer::changeState()
 			}
 			break;
 		}
+		case 20 :
+		{
+			ch = this->getChar();
+			if ('\n' != ch)
+			{
+				state = 20;
+			}
+			else
+			{
+				state = 0;
+				++pLineNum;
+			}
+			break;
+		}
+		case 21 :
+		{
+			ch = this->getChar();
+			if ('\\' != ch)
+			{
+				token += ch;
+				state = 24;
+			}
+			else
+			{
+				token += ch;
+				state = 22;
+			}
+			break;
+		}
+		//这里做实验 看原来的处理器是怎么处理的
+		case 22 :
+		{
+			ch = this->getChar();
+			switch (ch)
+			{
+
+			case '0':case '\'':case '\"': case 'n':
+			case '\?':case 'a':case 'b': case 'f':
+			case 'r':case 't':case 'v':
+			{
+				token += ch;
+				state = 24;
+				break;
+			}
+			default:
+			{
+				while (1)
+				{
+					ch = this->getChar();
+					if (('\'' == ch) || ('\n' == ch) || (-1 == ch))
+						break;
+				}
+				if ('\'' == ch)
+				{
+					state = 0;
+					dealError("5");
+				}
+				else if ('\n' == ch)
+				{
+					state = 0;
+					fallBackPoint();
+					dealError("4");
+				}
+				else if (-1 == ch)
+				{
+					state = 0;
+					fallBackPoint();
+					dealError("4");
+				}
+				break;
+			}
+				
+			}
+			break;
+		}
+		case 24 :
+		{
+			ch = this->getChar();
+			if ('\'' == ch)
+			{
+				state = 0;
+				printResult("char");
+			}
+			else
+			{
+				while (1)
+				{
+					ch = this->getChar();
+					if (('\'' == ch) || ('\n' == ch) || (-1 == ch))
+						break;
+				}
+				if ('\'' == ch)
+				{
+					state = 0;
+					dealError("5");
+				}
+				else if ('\n' == ch)
+				{
+					state = 0;
+					fallBackPoint();
+					dealError("4");
+				}
+				else if (-1 == ch)
+				{
+					state = 0;
+					fallBackPoint();
+					dealError("4");
+				}
+			}
+			break;
+		}
+		case 25 :
+		{
+			//ch = this->getChar();
+			while (1)
+			{
+				ch = this->getChar();
+				if (('\"' == ch) || ('\n' == ch) || (-1 == ch) || ('\\'==ch))
+					break;
+				token += ch;
+			}
+			if ('\\' == ch)
+			{
+				token += ch;
+				state = 26;
+			}
+			else if ('\"' == ch)
+			{
+				state = 0;
+				printResult("str");
+			}
+			else if ('\n' == ch)
+			{
+				state = 0;
+				fallBackPoint();
+				dealError("6");
+			}
+			else if (-1 == ch)
+			{
+				state = 0;
+				fallBackPoint();
+				dealError("6");
+			}
+			break;
+		}
+		case 26:
+		{
+			ch = this->getChar();
+			switch (ch)
+			{
+			case '0':case '\'':case '\"': case 'n':
+			case '\?':case 'a':case 'b': case 'f':
+			case 'r':case 't':case 'v':
+			{
+				token += ch;
+				state = 25;
+				break;
+			}
+			default:
+			{
+				while (1)
+				{
+					ch = this->getChar();
+					if (('\'' == ch) || ('\n' == ch) || (-1 == ch))
+						break;
+				}
+				if ('\"' == ch)
+				{
+					state = 0;
+					dealError("7");
+				}
+				else if ('\n' == ch)
+				{
+					state = 0;
+					fallBackPoint();
+					dealError("6");
+				}
+				else if (-1 == ch)
+				{
+					state = 0;
+					fallBackPoint();
+					dealError("6");
+				}
+				break;
+			}
+
+			}
+			break;
+
+
+		}
+		case 30:
+		{
+			ch = this->getChar();
+			if ('=' == ch)
+			{
+				token += ch;
+				state = 31;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+
+			break;
+		}
+		case 31:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 32:
+		{
+			ch = this->getChar();
+			if ('=' == ch || '+' == ch)
+			{
+				token += ch;
+				state = 33;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+		}
+		case 33:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 34:
+		{
+			ch = this->getChar();
+			if ('>' == ch || '-' == ch || '=' == ch)
+			{
+				state = 35;
+				token += ch;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+		}
+		case 35:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 36:
+		{
+			ch = this->getChar();
+			if ('&' == ch || '=' == ch)
+			{
+				state = 37;
+				token += ch;
+				break;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+			break;
+		}
+		case 37:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 38:
+		{
+			ch = this->getChar();
+			if ('|' == ch || '=' == ch)
+			{
+				state = 39;
+				token += ch;
+				break;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+			break;
+		}
+		case 39:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 40:
+		{
+			ch = this->getChar();
+			if ('>' == ch )
+			{
+				state = 41;
+				token += ch;
+				break;
+			}
+			else if ('=' == ch)
+			{
+				state = 50;
+				token += ch;
+				break;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+			break;
+		}
+		case 41:
+		{
+			ch = this->getChar();
+			if ('='==ch)
+			{
+				state = 42;
+				token += ch;
+				break;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+			break;
+		}
+		case 42:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 43:
+		{
+			ch = this->getChar();
+			if ('=' == ch)
+			{
+				state = 51;
+				token += ch;
+				break;
+			}
+			else if ('<' == ch)
+			{
+				state = 44;
+				token += ch;
+				break;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+			break;
+		}
+		case 44:
+		{
+			ch = this->getChar();
+			if ('=' == ch)
+			{
+				state = 45;
+				token += ch;
+				break;
+			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult();
+			}
+			break;
+		}
+		case 45:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 46:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 50:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
+		case 51:
+		{
+			state = 0;
+			printResult();
+			break;
+		}
 		default:
 			break;
 		}
@@ -729,5 +1164,9 @@ void analyzer::printResult(string info)
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "oct", token.c_str());
 	else if(info=="hex")
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "hex", token.c_str());
+	else if(info=="char")
+		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "char", token.c_str());
+	else if(info=="str")
+		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "str", token.c_str());
 
 }

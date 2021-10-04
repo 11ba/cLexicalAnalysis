@@ -1,7 +1,29 @@
-//0x123
-a /= 3
-/* sdfsdfsadfasdfsadfsdf
-asfdsadfsad
-*/
-while a /= lzy
-a/3
+# include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
+FILE* program;
+char fileName[20];
+char buffer[2048];
+
+void 1_print()
+{
+	printf("%d",2);
+}
+
+int main(void)
+{
+//	printf("hello!\n");
+//	char str[100];
+//	scanf("%s",str);
+//	getchar();
+//	getchar();
+	
+	char str[] = "'''''''";
+	printf("%s",str);
+	
+
+	
+}
+	
+
+
