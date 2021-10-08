@@ -2,17 +2,23 @@
 # include <cstdio>
 # include <cstdlib>
 # include <iostream>
+#include <cstdlib>
 
 
 analyzer::analyzer()
 {
 	iniKeyWords();//初始化关键词表
+	errorType = fopen("errorTpye.txt", "r");
+	inierrorType();
 	resultFile = fopen("result.txt", "w");//初始化
-	this->cProgram = fopen("c.txt", "r");//打开c语言程序
+	sumFile = fopen("sum.txt", "w");
+	errorFile = fopen("error.txt", "w");
+	
+	this->cProgram = fopen("test.c", "r");//打开c语言程序
 	this->state = 0;//当前状态为0
-	this->willEnd = 0;
-	this->wordNum = 0;
-	this->lineNum = 0;
+	this->willEnd = 0;//将要结束是0 
+	this->wordNum = 0;//0个单词
+	this->lineNum = 0;//0行
 	this->pLineNum = 1;//预测行号是1 碰到'\n'他就先加
 }
 
@@ -31,6 +37,16 @@ bool analyzer::iniKeyWords()
 		this->keyWords[str] = {str1,str2};
 	}
 	return 1;
+}
+
+bool analyzer::inierrorType()
+{
+	char str[100] = {0};
+	while (fscanf(errorType, "%s", str) != -1)
+	{
+		this->errorVector.push_back(str);
+	}
+	return false;
 }
 
 bool analyzer::readFileToBuffer()
@@ -124,7 +140,7 @@ void analyzer::changeState()
 				state = 25;
 				break;
 			}
-			//一 只有两种形态的 比如 * *=
+			//只有两种形态的 比如 * *=
 			case '*': case '%': case '=': case '!': case '~':
 			case '^': 
 			{
@@ -132,14 +148,14 @@ void analyzer::changeState()
 				token += ch;
 				break;
 			}
-			//二  + ++ +=
+			// + ++ +=
 			case '+':
 			{
 				state = 32;
 				token += ch;
 				break;
 			}
-			//三 有四种形态 类似于 - -> -- -=
+			// - -> -- -=
 			case '-' :
 			{
 				state = 34;
@@ -176,16 +192,24 @@ void analyzer::changeState()
 			}
 			//界符
 			case '(': case ')': case '[':case ']':case '{':case '}':
-			case ':': case ';': 
+			case ':': case ';': case ',':
 			{
 				state = 46;
 				token += ch;
 				break;
 			}
+			case -1:
+			{
+				state = 0;
+				break;
+			}
 			default:
+			{
 				state = 0;
 				dealError("1");
 				break;
+			}
+
 			}
 			break;
 		}
@@ -204,12 +228,12 @@ void analyzer::changeState()
 				this->fallBackPoint();//回退指针
 				if (this->keyWords.count(this->token))//判断是不是在关键字表里
 				{
-					this->numOfWords[token]++;
+					//this->numOfWords[token]++;
 					this->printResult();
 				}
 				else
 				{
-					this->numOfWords[token]++;
+					//this->numOfWords[token]++;
 					//加入符号表
 					this->printResult("id");
 				}
@@ -1116,7 +1140,7 @@ bool analyzer::isUnderline(char c)
 
 void analyzer::dealError(string info)
 {
-
+	fprintf(errorFile, "%d行 错误是: %s\n",lineNum,errorVector[atoi(info.c_str())].c_str());
 }
 
 char analyzer::getChar()
@@ -1153,20 +1177,55 @@ void analyzer::printResult(string info)
 {
 	
 	//这里要加入判断
-	if(info=="")
-		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, this->keyWords[token].first.c_str(), 
-		this->keyWords[token].second.c_str());
-	else if(info=="id")
-		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "id",token.c_str());
-	else if(info=="dec")
+	if (info == "")
+	{
+		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, this->keyWords[token].first.c_str(),
+			this->keyWords[token].second.c_str());
+		this->numOfWords[token]++;
+	}
+	else if (info == "id")
+	{
+		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "id", token.c_str());
+		this->numOfWords["id"]++;
+	}	
+	else if (info == "dec")
+	{
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "dec", token.c_str());
-	else if(info=="oct")
+		this->numOfWords["num"]++;
+	}	
+	else if (info == "oct")
+	{
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "oct", token.c_str());
-	else if(info=="hex")
+		this->numOfWords["num"]++;
+	}
+	else if (info == "hex")
+	{
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "hex", token.c_str());
-	else if(info=="char")
+		this->numOfWords["num"]++;
+	}
+	else if (info == "char")
+	{
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "char", token.c_str());
-	else if(info=="str")
+		this->numOfWords["char"]++;
+	}	
+	else if (info == "str")
+	{
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "str", token.c_str());
+		this->numOfWords["str"]++;
+	}
 
+	this->wordNum++;
+		
+
+}
+
+void analyzer::printSum()
+{
+	fprintf(sumFile, "此程序一共有%d行\n", this->lineNum);
+	fprintf(sumFile, "此程序一共有%d个单词\n", this->wordNum);
+	fprintf(sumFile, "\n");
+	for (auto ele : this->numOfWords)
+	{
+		fprintf(sumFile, "%s有%d个\n", ele.first.c_str(),ele.second);
+	}
 }
