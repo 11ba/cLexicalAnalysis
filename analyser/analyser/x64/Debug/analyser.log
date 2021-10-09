@@ -1,0 +1,7 @@
+﻿  analyzer.cpp
+D:\Study\0.北邮课程\北邮大三上\北邮大三上编译原理\作业\c语言词法分析器\homework\analyser\analyser\analyzer.cpp(55,71): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+D:\Study\0.北邮课程\北邮大三上\北邮大三上编译原理\作业\c语言词法分析器\homework\analyser\analyser\analyzer.cpp(1162,68): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+D:\Study\0.北邮课程\北邮大三上\北邮大三上编译原理\作业\c语言词法分析器\homework\analyser\analyser\analyzer.cpp(1169,79): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+  main.cpp
+  正在生成代码...
+  analyser.vcxproj -> D:\Study\0.北邮课程\北邮大三上\北邮大三上编译原理\作业\c语言词法分析器\homework\analyser\x64\Debug\analyser.exe

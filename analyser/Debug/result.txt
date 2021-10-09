@@ -1,0 +1,15 @@
+line : 1 < id , sfs > 
+line : 4 < dec , 123 > 
+line : 6 < dec , 12 > 
+line : 6 < id , sfdsadfsad > 
+line : 8 < int , - > 
+line : 8 < id , main > 
+line : 8 < ( , - > 
+line : 8 < void , - > 
+line : 8 < ) , - > 
+line : 9 < { , - > 
+line : 12 < id , yyt > 
+line : 12 < id , sfsdf > 
+line : 12 < ; , - > 
+line : 13 < id , wjy > 
+line : 14 < } , - > 

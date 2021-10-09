@@ -13,7 +13,7 @@ analyzer::analyzer()
 	resultFile = fopen("result.txt", "w");//初始化
 	sumFile = fopen("sum.txt", "w");
 	errorFile = fopen("error.txt", "w");
-	
+	//
 	this->cProgram = fopen("test.c", "r");//打开c语言程序
 	this->state = 0;//当前状态为0
 	this->willEnd = 0;//将要结束是0 
@@ -42,11 +42,12 @@ bool analyzer::iniKeyWords()
 bool analyzer::inierrorType()
 {
 	char str[100] = {0};
+	if (errorType == NULL) return false;
 	while (fscanf(errorType, "%s", str) != -1)
 	{
 		this->errorVector.push_back(str);
 	}
-	return false;
+	return true;
 }
 
 bool analyzer::readFileToBuffer()
@@ -61,7 +62,11 @@ void analyzer::changeState()
 	char ch = 0;
 	while (1)
 	{
-		if (ch == -1) break;
+		if (ch == -1)
+		{
+			this->lineNum = this->pLineNum;
+			break;
+		}
 		switch (this->state)
 		{
 		case 0: //初始状态
@@ -190,9 +195,9 @@ void analyzer::changeState()
 				token += ch;
 				break;
 			}
-			//界符
+			//界符 或者 一种特殊情况 ?
 			case '(': case ')': case '[':case ']':case '{':case '}':
-			case ':': case ';': case ',':
+			case ':': case ';': case ',': case '?': case '\\':
 			{
 				state = 46;
 				token += ch;
@@ -228,13 +233,10 @@ void analyzer::changeState()
 				this->fallBackPoint();//回退指针
 				if (this->keyWords.count(this->token))//判断是不是在关键字表里
 				{
-					//this->numOfWords[token]++;
 					this->printResult();
 				}
 				else
 				{
-					//this->numOfWords[token]++;
-					//加入符号表
 					this->printResult("id");
 				}
 			}
@@ -442,6 +444,12 @@ void analyzer::changeState()
 				dealError("0");
 				printResult("oct");
 			}
+			else
+			{
+				state = 0;
+				fallBackPoint();
+				printResult("oct");
+			}
 			break;
 		}
 		case 9:
@@ -531,13 +539,13 @@ void analyzer::changeState()
 				token += ch;
 				state = 13;
 			}
-			else if (isLetter(ch) || isUnderline(ch))
-			{
-				state = 0;
-				fallBackPoint();
-				dealError("0");
-				printResult();
-			}
+			//else if (isLetter(ch) || isUnderline(ch))
+			//{
+			//	state = 0;
+			//	fallBackPoint();
+			//	dealError("0");
+			//	printResult();
+			//}
 			else
 			{
 				state = 0;
@@ -640,6 +648,11 @@ void analyzer::changeState()
 			{
 				state = 17;
 			}
+			else if ('\n' == ch)
+			{
+				state = 16;
+				this->pLineNum++;
+			}
 			else if (-1 != ch)
 			{
 				state = 16;
@@ -693,7 +706,12 @@ void analyzer::changeState()
 		case 21 :
 		{
 			ch = this->getChar();
-			if ('\\' != ch)
+			if ('\'' == ch)
+			{
+				state = 0;
+				dealError("8");
+			}
+			else if ('\\' != ch)
 			{
 				token += ch;
 				state = 24;
@@ -703,6 +721,7 @@ void analyzer::changeState()
 				token += ch;
 				state = 22;
 			}
+
 			break;
 		}
 		//这里做实验 看原来的处理器是怎么处理的
@@ -714,7 +733,7 @@ void analyzer::changeState()
 
 			case '0':case '\'':case '\"': case 'n':
 			case '\?':case 'a':case 'b': case 'f':
-			case 'r':case 't':case 'v':
+			case 'r':case 't':case 'v': case '\\':
 			{
 				token += ch;
 				state = 24;
@@ -828,7 +847,7 @@ void analyzer::changeState()
 			{
 			case '0':case '\'':case '\"': case 'n':
 			case '\?':case 'a':case 'b': case 'f':
-			case 'r':case 't':case 'v':
+			case 'r':case 't':case 'v': case '\\':
 			{
 				token += ch;
 				state = 25;
@@ -1187,6 +1206,10 @@ void analyzer::printResult(string info)
 	{
 		fprintf(resultFile, "line : %d < %s , %s > \n", this->lineNum, "id", token.c_str());
 		this->numOfWords["id"]++;
+		if (this->symbolTable.count(token) == 0)
+		{
+			this->symbolTable[token] = { "id",token };
+		}
 	}	
 	else if (info == "dec")
 	{
@@ -1228,4 +1251,12 @@ void analyzer::printSum()
 	{
 		fprintf(sumFile, "%s有%d个\n", ele.first.c_str(),ele.second);
 	}
+	fprintf(sumFile, "\n");
+	fprintf(sumFile, "下面是本程序的标识符\n");
+	for (auto ele : this->symbolTable)
+	{
+		fprintf(sumFile, "< %s, %s>\n", ele.second.first.c_str(), ele.second.second.c_str());
+	}
+
+
 }
