@@ -10,6 +10,8 @@ class analyzer
 {
 public:
 	analyzer();//构造函数
+	~analyzer();//析构函数 
+	bool getTheCProgram();//输入测试的样例
 	bool iniKeyWords();//初始化哈希表
 	bool inierrorType();//初始化错误类型
 	bool readFileToBuffer();//读入到缓冲区 这个函数后来没用 因为直接集成到 手写的 getChar()里

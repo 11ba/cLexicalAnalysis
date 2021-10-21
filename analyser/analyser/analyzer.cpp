@@ -13,13 +13,35 @@ analyzer::analyzer()
 	resultFile = fopen("result.txt", "w");//初始化
 	sumFile = fopen("sum.txt", "w");
 	errorFile = fopen("error.txt", "w");
-	//
-	this->cProgram = fopen("test.c", "r");//打开c语言程序
+	this->cProgram = NULL;
+	//this->cProgram = fopen("test.c", "r");//打开c语言程序
 	this->state = 0;//当前状态为0
 	this->willEnd = 0;//将要结束是0 
 	this->wordNum = 0;//0个单词
 	this->lineNum = 0;//0行
 	this->pLineNum = 1;//预测行号是1 碰到'\n'他就先加
+}
+
+analyzer::~analyzer()
+{
+	if(NULL != this->cProgram)
+		fclose(this->cProgram);
+	fclose(this->resultFile);
+	fclose(this->sumFile);
+	fclose(this->errorFile);
+	fclose(this->errorType);
+}
+
+
+
+bool analyzer::getTheCProgram()
+{
+	printf("请输入测试样例的文件名o(^▽^)o\n");
+	char str[100] = { 0 };
+	int num = scanf("%s", str);
+	this->cProgram = fopen(str, "r");
+	if (NULL == this->cProgram) return false;
+	return true;
 }
 
 bool analyzer::iniKeyWords()
